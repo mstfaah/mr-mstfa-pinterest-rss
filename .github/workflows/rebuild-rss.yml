@@ -1,0 +1,26 @@
+name: Rebuild Pinterest RSS
+on:
+  schedule:
+    # 06:00 UTC = 09:00 Asia/Qatar (UTC+3, no DST)
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Rebuild feed from Blogger RSS
+        run: python build_feed.py --max-items 25 -o rss.xml
+      - name: Commit if the feed changed
+        run: |
+          git config user.name "pinterest-rss-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add rss.xml
+          git diff --cached --quiet && echo "No feed change" && exit 0
+          git commit -m "chore: refresh Pinterest RSS from Blogger"
+          git push
